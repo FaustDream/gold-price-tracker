@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ColorPicker?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Separator?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.goldpricetracker.frontend.SettingsController"
+      style="-fx-padding: 20; -fx-background-color: white;">
+    
+    <Label text="设置" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+    <Separator/>
+    
+    <Label text="外观设置" style="-fx-font-weight: bold;"/>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="背景颜色:" prefWidth="80"/>
+        <ColorPicker fx:id="bgColorPicker"/>
+    </HBox>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="国内金颜色:" prefWidth="80"/>
+        <ColorPicker fx:id="domesticColorPicker"/>
+    </HBox>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="国际金颜色:" prefWidth="80"/>
+        <ColorPicker fx:id="internationalColorPicker"/>
+    </HBox>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="字体大小:" prefWidth="80"/>
+        <TextField fx:id="fontSizeField" prefWidth="60" text="12"/>
+        <Label text="px"/>
+    </HBox>
+    
+    <Separator/>
+    
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="智能显隐" style="-fx-font-weight: bold;"/>
+        <CheckBox fx:id="smartVisibilityToggle" text="启用"/>
+    </HBox>
+    <Label text="(0为不限制，不满足条件时仅显示透明占位符)" style="-fx-font-size: 10px; -fx-text-fill: gray;"/>
+    
+    <HBox spacing="5" alignment="CENTER_LEFT">
+        <Label text="国内金范围:" />
+        <TextField fx:id="minDomesticField" prefWidth="50" promptText="Min"/>
+        <Label text="-" />
+        <TextField fx:id="maxDomesticField" prefWidth="50" promptText="Max"/>
+    </HBox>
+    <HBox spacing="5" alignment="CENTER_LEFT">
+        <Label text="国际金范围:" />
+        <TextField fx:id="minInternationalField" prefWidth="50" promptText="Min"/>
+        <Label text="-" />
+        <TextField fx:id="maxInternationalField" prefWidth="50" promptText="Max"/>
+    </HBox>
+    
+    <Separator/>
+    
+    <Label text="价格预警 (达到设定值弹窗提醒, 0为关闭)" style="-fx-font-weight: bold;"/>
+    <HBox spacing="5" alignment="CENTER_LEFT">
+        <Label text="国内金:" />
+        <Label text="高于" style="-fx-font-size: 10px;"/>
+        <TextField fx:id="alertDomesticMaxField" prefWidth="50" promptText="0"/>
+        <Label text="低于" style="-fx-font-size: 10px;"/>
+        <TextField fx:id="alertDomesticMinField" prefWidth="50" promptText="0"/>
+    </HBox>
+    <HBox spacing="5" alignment="CENTER_LEFT">
+        <Label text="国际金:" />
+        <Label text="高于" style="-fx-font-size: 10px;"/>
+        <TextField fx:id="alertInternationalMaxField" prefWidth="50" promptText="0"/>
+        <Label text="低于" style="-fx-font-size: 10px;"/>
+        <TextField fx:id="alertInternationalMinField" prefWidth="50" promptText="0"/>
+    </HBox>
+    
+    <Separator/>
+    
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="取消" onAction="#handleCancel"/>
+        <Button text="保存" onAction="#handleSave"/>
+    </HBox>
+</VBox>
