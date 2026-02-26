@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="rootBox" alignment="CENTER" spacing="2" 
+      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="com.goldpricetracker.frontend.DashboardController">
+    
+    <Label fx:id="domesticPriceLabel" text="Loading..." />
+           
+    <Label fx:id="internationalPriceLabel" text="Wait..." />
+
+</VBox>
