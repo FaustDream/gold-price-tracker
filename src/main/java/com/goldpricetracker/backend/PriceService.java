@@ -1,6 +1,11 @@
 package com.goldpricetracker.backend;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -16,6 +21,7 @@ public class PriceService {
     private static final Logger logger = LoggerFactory.getLogger(PriceService.class);
     private final OkHttpClient client;
     private final ObjectMapper mapper = new ObjectMapper();
+    private Clock clock = Clock.system(ZoneId.of("Asia/Shanghai"));
 
     // API Endpoints
     // hf_XAU: 伦敦金
@@ -63,6 +69,102 @@ public class PriceService {
         return prices;
     }
 
+    public void setClock(Clock clock) {
+        this.clock = clock;
+    }
+
+    /**
+     * 判断当前是否为国内金休市时间
+     * 交易时间：
+     * 周一至周五：09:00-11:30, 13:30-15:30, 20:00-02:30(次日)
+     * 周末休市
+     */
+    private boolean isMarketClosed() {
+        // 使用注入的 Clock 获取当前时间，方便测试
+        LocalDateTime now = LocalDateTime.now(clock);
+        DayOfWeek day = now.getDayOfWeek();
+        LocalTime time = now.toLocalTime();
+
+        // 周日全天休市
+        if (day == DayOfWeek.SUNDAY) {
+            return true;
+        }
+
+        // 周六 02:30 之后休市
+        if (day == DayOfWeek.SATURDAY) {
+            return time.isAfter(LocalTime.of(2, 30));
+        }
+
+        // 周一 09:00 之前休市 (周一凌晨无夜盘)
+        if (day == DayOfWeek.MONDAY) {
+            if (time.isBefore(LocalTime.of(9, 0))) {
+                return true;
+            }
+        } else {
+            // 周二至周五 02:30 - 09:00 休市
+            if (time.isAfter(LocalTime.of(2, 30)) && time.isBefore(LocalTime.of(9, 0))) {
+                return true;
+            }
+        }
+
+        // 午间休市 11:30 - 13:30
+        if (time.isAfter(LocalTime.of(11, 30)) && time.isBefore(LocalTime.of(13, 30))) {
+            return true;
+        }
+
+        // 傍晚休市 15:30 - 20:00
+        if (time.isAfter(LocalTime.of(15, 30)) && time.isBefore(LocalTime.of(20, 0))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void validateAndFixDomesticPrice(Map<String, Double> prices) {
+        double international = prices.getOrDefault("international", lastInternational);
+        double domestic = prices.getOrDefault("domestic", 0.0);
+        
+        // 使用获取到的实时汇率，如果获取失败则使用缓存
+        double rate = prices.getOrDefault("rate", lastRate);
+        if (rate <= 0) rate = 7.20; // 最后的硬兜底
+        
+        // 计算理论国内金价 (CNY/g) = (国际金价 USD/oz / 31.1034768) * 汇率
+        double calculatedDomestic = 0.0;
+        if (international > 0) {
+            calculatedDomestic = (international / 31.1034768) * rate;
+        }
+        
+        boolean shouldUseCalculation = false;
+        
+        // 判断是否休市，如果休市则强制使用计算值
+        if (isMarketClosed()) {
+            if (calculatedDomestic > 0) {
+                shouldUseCalculation = true;
+                logger.info("当前为休市时间，强制使用计算值: " + calculatedDomestic);
+            }
+        } else {
+            // 非休市时间，执行原有校验逻辑
+            if (domestic <= 0) {
+                shouldUseCalculation = true;
+            } else if (calculatedDomestic > 0) {
+                double diffPercent = Math.abs(domestic - calculatedDomestic) / calculatedDomestic;
+                if (diffPercent > 0.05) {
+                    shouldUseCalculation = true;
+                }
+            }
+        }
+        
+        if (shouldUseCalculation && calculatedDomestic > 0) {
+            prices.put("domestic", calculatedDomestic);
+        } else if (domestic <= 0 && lastDomestic > 0) {
+            prices.put("domestic", lastDomestic);
+        }
+        
+        if (prices.getOrDefault("international", 0.0) <= 0 && lastInternational > 0) {
+            prices.put("international", lastInternational);
+        }
+    }
+
     private void fetchFromSina(Map<String, Double> prices) {
         Request request = new Request.Builder()
             .url(SINA_API_URL)
@@ -96,14 +198,21 @@ public class PriceService {
     }
 
     private double parseExchangeRate(String line) {
-        // var hq_str_USDCNY="美元人民币,7.2465,..."
+        // hq_str_USDCNY="16:47:15,6.8366,6.8376,6.8687,379,6.8687,6.8687,6.8308,6.8371,美元人民币,2026-02-26"
+        // 格式可能为: Time, Open, PreClose, Current, ...
+        // 或者旧格式: Name, Current, ...
         int start = line.indexOf("\"");
         int end = line.lastIndexOf("\"");
         if (start > 0 && end > start) {
             String data = line.substring(start + 1, end);
             String[] parts = data.split(",");
-            if (parts.length > 1) {
-                return Double.parseDouble(parts[1]); // 第2个字段是当前汇率
+            if (parts.length > 3) {
+                // 如果第1个字段包含冒号，说明是时间，取第4个字段(索引3)作为当前价格
+                if (parts[0].contains(":")) {
+                    return Double.parseDouble(parts[3]);
+                }
+                // 否则假设是旧格式，取第2个字段
+                return Double.parseDouble(parts[1]);
             }
         }
         return 0.0;
@@ -136,42 +245,6 @@ public class PriceService {
             }
         } catch (Exception ignored) {}
         return 0.0;
-    }
-
-    private void validateAndFixDomesticPrice(Map<String, Double> prices) {
-        double international = prices.getOrDefault("international", lastInternational);
-        double domestic = prices.getOrDefault("domestic", 0.0);
-        
-        // 使用获取到的实时汇率，如果获取失败则使用缓存
-        double rate = prices.getOrDefault("rate", lastRate);
-        if (rate <= 0) rate = 7.20; // 最后的硬兜底
-        
-        // 计算理论国内金价 (CNY/g) = (国际金价 USD/oz / 31.1034768) * 汇率
-        double calculatedDomestic = 0.0;
-        if (international > 0) {
-            calculatedDomestic = (international / 31.1034768) * rate;
-        }
-        
-        boolean shouldUseCalculation = false;
-        
-        if (domestic <= 0) {
-            shouldUseCalculation = true;
-        } else if (calculatedDomestic > 0) {
-            double diffPercent = Math.abs(domestic - calculatedDomestic) / calculatedDomestic;
-            if (diffPercent > 0.05) {
-                shouldUseCalculation = true;
-            }
-        }
-        
-        if (shouldUseCalculation && calculatedDomestic > 0) {
-            prices.put("domestic", calculatedDomestic);
-        } else if (domestic <= 0 && lastDomestic > 0) {
-            prices.put("domestic", lastDomestic);
-        }
-        
-        if (prices.getOrDefault("international", 0.0) <= 0 && lastInternational > 0) {
-            prices.put("international", lastInternational);
-        }
     }
 
     private double parsePrice(String line) {
