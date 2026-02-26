@@ -27,53 +27,83 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
+/**
+ * 主界面控制器：负责处理 UI 逻辑、数据更新和用户交互。
+ * 
+ * 主要职责：
+ * 1. 初始化界面样式（透明背景、字体颜色）。
+ * 2. 定时调用 PriceService 获取最新价格并更新到界面。
+ * 3. 处理窗口拖动、右键菜单、设置窗口弹出。
+ * 4. 实现价格预警和智能显隐功能。
+ */
 public class DashboardController {
 
-    @FXML private VBox rootBox;
-    @FXML private Label domesticPriceLabel;
-    @FXML private Label internationalPriceLabel;
+    // FXML 绑定的 UI 控件
+    @FXML private VBox rootBox; // 根容器，用于设置背景和拖动事件
+    @FXML private Label domesticPriceLabel; // 显示国内金价
+    @FXML private Label internationalPriceLabel; // 显示国际金价
 
+    // 后端服务实例
     private final PriceService priceService = new PriceService();
+    // 定时器，用于周期性刷新数据
     private final Timer timer = new Timer(true);
+    // 配置属性，用于存储用户设置 (颜色、阈值等)
     private Properties config = new Properties();
     
+    // 窗口拖动相关的坐标偏移量
     private double xOffset = 0;
     private double yOffset = 0;
+    // 窗口位置锁定标志
     private boolean isLocked = false;
+    // 配置文件路径
     private static final String CONFIG_FILE = "gold_tracker_config.properties";
+    // 当前窗口的 Stage 对象
     private Stage stage;
     
+    // 预警通知的冷却时间记录，防止频繁弹窗
     private Map<String, Long> lastAlertTime = new HashMap<>();
-    private static final long ALERT_COOLDOWN = 10 * 60 * 1000;
+    private static final long ALERT_COOLDOWN = 10 * 60 * 1000; // 10分钟
 
+    /**
+     * 初始化方法：FXML 加载完成后自动调用
+     */
     @FXML
     public void initialize() {
+        // 1. 加载配置文件
         loadConfig();
+        // 2. 应用用户设置的样式
         applySettings();
         
-        // 样式设置
+        // 3. 设置默认样式 (半透明黑色背景)
         rootBox.setStyle("-fx-background-color: rgba(0, 0, 0, 0.7); -fx-background-radius: 5; -fx-padding: 2;");
         String commonStyle = "-fx-font-family: 'Segoe UI', sans-serif; -fx-font-size: 11px; -fx-font-weight: bold;";
-        domesticPriceLabel.setStyle(commonStyle + " -fx-text-fill: #FFD700;");
-        internationalPriceLabel.setStyle(commonStyle + " -fx-text-fill: #FFFFFF;");
+        domesticPriceLabel.setStyle(commonStyle + " -fx-text-fill: #FFD700;"); // 金色
+        internationalPriceLabel.setStyle(commonStyle + " -fx-text-fill: #FFFFFF;"); // 白色
         
-        setupWindowDragging();
-        setupContextMenu();
-        startDataPolling();
+        // 4. 初始化功能模块
+        setupWindowDragging(); // 允许窗口拖动
+        setupContextMenu();    // 设置右键菜单
+        startDataPolling();    // 开始定时获取数据
     }
 
+    /**
+     * 注入 Stage 对象，用于控制窗口位置和置顶状态
+     */
     public void setStage(Stage stage) {
         this.stage = stage;
-        loadWindowPosition();
+        loadWindowPosition(); // 恢复上次关闭时的位置
+        // 窗口关闭时保存位置
         stage.setOnCloseRequest(event -> saveWindowPosition());
     }
 
+    // 从文件加载配置
     private void loadConfig() {
         try (InputStream input = new FileInputStream(CONFIG_FILE)) {
             config.load(input);
         } catch (IOException ignored) {}
     }
 
+    // 应用配置中的样式设置 (背景色、字体大小等)
     public void applySettings() {
         String bg = config.getProperty("color.bg", "rgba(0,0,0,0.01)");
         String domesticColor = config.getProperty("color.domestic", "#FFD700");
@@ -89,6 +119,7 @@ public class DashboardController {
         rootBox.setMinSize(60, 30);
     }
 
+    // 设置右键菜单 (设置、锁定、退出等)
     private void setupContextMenu() {
         ContextMenu contextMenu = new ContextMenu();
         
@@ -103,8 +134,7 @@ public class DashboardController {
         visibilityItem.setOnAction(e -> {
             config.setProperty("visibility.enabled", String.valueOf(visibilityItem.isSelected()));
             saveConfig();
-            // 立即触发一次更新以应用状态
-            updatePrices();
+            updatePrices(); // 立即刷新状态
         });
 
         MenuItem settingsItem = new MenuItem("设置");
@@ -124,6 +154,7 @@ public class DashboardController {
         
         contextMenu.getItems().addAll(startupItem, visibilityItem, settingsItem, toggleLockItem, exitItem);
         
+        // 绑定右键事件
         rootBox.setOnContextMenuRequested(event -> 
             contextMenu.show(rootBox, event.getScreenX(), event.getScreenY())
         );
@@ -139,6 +170,7 @@ public class DashboardController {
 
     private boolean isSettingsOpen = false;
 
+    // 打开设置窗口
     private void openSettings() {
         if (isSettingsOpen) return;
         try {
@@ -154,7 +186,6 @@ public class DashboardController {
             settingsStage.initStyle(StageStyle.UTILITY);
             settingsStage.setAlwaysOnTop(true);
             
-            // 标记设置窗口打开状态
             isSettingsOpen = true;
             settingsStage.setOnHidden(e -> isSettingsOpen = false);
             
@@ -164,18 +195,24 @@ public class DashboardController {
         }
     }
 
+    /**
+     * 核心更新逻辑：获取价格并更新 UI
+     */
     private void updatePrices() {
+        // 1. 调用 Backend 获取数据
         Map<String, Double> prices = priceService.fetchPrices();
         double domestic = prices.getOrDefault("domestic", 0.0);
         double international = prices.getOrDefault("international", 0.0);
 
+        // 2. 检查是否需要触发价格预警
         checkAlerts(domestic, international);
 
+        // 3. 在 JavaFX UI 线程更新界面
         Platform.runLater(() -> {
             boolean isVisibilityEnabled = Boolean.parseBoolean(config.getProperty("visibility.enabled", "false"));
             boolean showContent = true;
 
-            // 仅当开启了智能显隐，且不满足显示条件时，才隐藏内容
+            // 智能显隐逻辑：如果开启且不在设定范围内，则隐藏
             if (isVisibilityEnabled && !shouldShow(domestic, international)) {
                 showContent = false;
             }
@@ -190,7 +227,7 @@ public class DashboardController {
                     internationalPriceLabel.setText("--");
                 }
             } else {
-                // 伪隐藏：内容置空，保留极低透明度背景以便右键
+                // 伪隐藏：清空文字，透明度设为极低 (0.01)，保留右键交互能力
                 domesticPriceLabel.setText("");
                 internationalPriceLabel.setText("");
                 rootBox.setOpacity(0.01); 
@@ -198,7 +235,7 @@ public class DashboardController {
         });
     }
 
-    // ... (中间代码保持不变: checkAlerts, triggerAlert, showNotification, parseDouble, shouldShow, startDataPolling, setupWindowDragging, saveWindowPosition, loadWindowPosition) ...
+    // 检查并触发预警
     private void checkAlerts(double domestic, double international) {
         if (domestic <= 0 && international <= 0) return;
 
@@ -214,6 +251,7 @@ public class DashboardController {
         if (iMin > 0 && international > 0 && international <= iMin) triggerAlert("intl_min", "国际金价预警", "当前价格: " + international + " (低于 " + iMin + ")");
     }
 
+    // 触发桌面通知 (带冷却时间)
     private void triggerAlert(String key, String title, String message) {
         long now = System.currentTimeMillis();
         if (now - lastAlertTime.getOrDefault(key, 0L) > ALERT_COOLDOWN) {
@@ -222,6 +260,7 @@ public class DashboardController {
         }
     }
 
+    // 显示自定义的 Toast 通知
     private void showNotification(String title, String message) {
         Stage toastStage = new Stage();
         toastStage.initStyle(StageStyle.TRANSPARENT);
@@ -260,6 +299,7 @@ public class DashboardController {
         try { return Double.parseDouble(val); } catch (Exception e) { return 0.0; }
     }
 
+    // 判断当前价格是否在"智能显隐"的显示范围内
     private boolean shouldShow(double domestic, double international) {
         double minD = parseDouble(config.getProperty("threshold.domestic.min", "0"));
         double maxD = parseDouble(config.getProperty("threshold.domestic.max", "0"));
@@ -272,15 +312,16 @@ public class DashboardController {
         return showD && showI;
     }
 
+    // 启动定时轮询任务
     private void startDataPolling() {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 updatePrices();
                 
-                // 激进的防遮挡逻辑
+                // 激进的防遮挡逻辑：每 2 秒强制置顶一次
                 Platform.runLater(() -> {
-                    // 如果设置窗口打开，暂停强制置顶主窗口，防止抢夺焦点
+                    // 如果设置窗口打开，暂停强制置顶主窗口，防止抢夺焦点导致无法输入
                     if (stage != null && !isSettingsOpen) {
                         stage.toFront();
                         
@@ -290,9 +331,10 @@ public class DashboardController {
                     }
                 });
             }
-        }, 0, 2000);
+        }, 0, 2000); // 间隔 2000 毫秒 (2秒)
     }
 
+    // 设置窗口拖动逻辑
     private void setupWindowDragging() {
         rootBox.setOnMousePressed(event -> {
             if (!isLocked && event.getButton() == MouseButton.PRIMARY) {
@@ -311,6 +353,7 @@ public class DashboardController {
         });
     }
 
+    // 保存窗口位置到配置文件
     private void saveWindowPosition() {
         if (stage == null) return;
         try (OutputStream output = new FileOutputStream(CONFIG_FILE)) {
@@ -323,6 +366,7 @@ public class DashboardController {
         } catch (IOException ignored) {}
     }
 
+    // 加载窗口位置
     private void loadWindowPosition() {
         String x = config.getProperty("window.x");
         String y = config.getProperty("window.y");
