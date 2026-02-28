@@ -33,6 +33,8 @@
 - [x] 再次修复布局问题：将价格恢复为上下垂直排列 (HBox -> VBox)
 - [x] 增加自动停靠任务栏功能，默认开启
 - [x] 优化拖拽逻辑：未锁定时允许手动拖拽，并自动解除任务栏停靠模式
+- [x] 优化日志记录逻辑：日志文件现在自动生成在软件 EXE 同级目录下
+- [x] 清理 release 目录中的旧版本文件
 - [x] 使用 `jpackage` 结合 `--module-path` 和 `--add-opens` 彻底解决 `MouseEvent$Flags` 闪退
 - [x] 验证 `release/1.3/gold-price-tracker-1.3.0.exe/` 运行正常
 - [x] 运行 `mvn test` 验证单元测试通过

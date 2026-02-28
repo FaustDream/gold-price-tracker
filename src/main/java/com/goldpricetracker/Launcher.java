@@ -4,6 +4,7 @@ import javax.swing.JOptionPane;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.io.File;
+import java.net.URI;
 import java.util.Date;
 
 /**
@@ -22,6 +23,7 @@ import java.util.Date;
  */
 public class Launcher {
     public static void main(String[] args) {
+        System.out.println("Launcher main starting...");
         // 1. 初始化日志系统 (重定向输出到文件)
         setupLogging();
         
@@ -54,8 +56,16 @@ public class Launcher {
      */
     private static void setupLogging() {
         try {
-            // 日志文件保存在当前运行目录下
-            File logFile = new File("gold_price_tracker.log");
+            // 获取程序运行所在的目录，确保日志文件生成在软件同目录下
+            String jarPath = Launcher.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+            File jarFile = new File(jarPath);
+            File logFile = new File(jarFile.getParent(), "gold_price_tracker.log");
+            
+            // 如果是在开发环境下（target/classes），则直接用当前目录
+            if (!jarFile.getName().endsWith(".jar")) {
+                logFile = new File("gold_price_tracker.log");
+            }
+
             // 追加模式 (true)，每次启动不覆盖旧日志
             FileOutputStream fos = new FileOutputStream(logFile, true);
             PrintStream ps = new PrintStream(fos, true);
@@ -64,12 +74,16 @@ public class Launcher {
             System.setOut(ps);
             System.setErr(ps);
             
-            // 打印启动分割线
+            // 打印启动分割线和环境信息
             System.out.println("\n==================================================");
             System.out.println("Application Started at " + new Date());
+            System.out.println("Log file location: " + logFile.getAbsolutePath());
+            System.out.println("Java version: " + System.getProperty("java.version"));
+            System.out.println("OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version"));
+            System.out.println("Working Directory: " + System.getProperty("user.dir"));
             System.out.println("==================================================");
         } catch (Exception e) {
-            // 如果日志初始化失败，尝试弹窗提醒（虽然此时可能连弹窗都弹不出来，但尽力而为）
+            e.printStackTrace(); // 至少打印到控制台
             try {
                 JOptionPane.showMessageDialog(null, "日志系统初始化失败: " + e.getMessage(), "警告", JOptionPane.WARNING_MESSAGE);
             } catch (Exception ignored) {}
