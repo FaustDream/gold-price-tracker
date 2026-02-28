@@ -14,8 +14,10 @@
 
 ### 2. 版本管理 [已完成]
 - [x] 将 `pom.xml` 中的版本号从 1.2.0 升级为 1.3.0
-- [x] 在 `release/1.3/` 下打包发布可执行文件
-- [x] 确保 `.gitignore` 已忽略 `release/` 文件夹，防止其被上传到 GitHub
+- [x] 在 `release/1.3/` 下打包发布可执行文件 (JAR & EXE)
+- [x] 使用 `jpackage` 生成免安装 EXE 软件包
+- [x] 确保 `.gitignore` 已忽略 `release/` 文件夹
+- [x] 将所有更改提交并推送至 GitHub 远程仓库 (origin/main)
 
 ### 3. 代码规范化 (根据 CLAUDE.md) [已完成]
 - [x] 为 `PriceService.java` 添加详细的中文步骤注释和 Javadoc
@@ -25,7 +27,8 @@
 
 ### 4. 验证与发布 [已完成]
 - [x] 运行 `mvn clean package` 生成可执行 JAR
-- [x] 验证 `release/1.3/gold-price-tracker-1.3.0.jar` 是否存在
+- [x] 修复 FXML 布局不一致导致的启动闪退问题 (VBox -> HBox)
+- [x] 验证 `release/1.3/gold-price-tracker-1.3.0.exe/` 运行正常
 - [x] 运行 `mvn test` 验证单元测试通过
 
 ---
