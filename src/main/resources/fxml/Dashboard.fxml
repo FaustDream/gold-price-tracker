@@ -1,14 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
 
-<VBox fx:id="rootBox" alignment="CENTER" spacing="2" 
+<VBox fx:id="rootBox" alignment="CENTER_LEFT" spacing="0" 
       xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
-      fx:controller="com.goldpricetracker.frontend.DashboardController">
+      fx:controller="com.goldpricetracker.frontend.DashboardController"
+      style="-fx-background-color: transparent; -fx-padding: 2 5;">
     
-    <Label fx:id="domesticPriceLabel" text="Loading..." />
-           
-    <Label fx:id="internationalPriceLabel" text="Wait..." />
+    <!-- 国内金价 (CNY) -->
+    <HBox alignment="CENTER_LEFT" spacing="2">
+        <Label fx:id="domesticPriceLabel" text="Loading..." style="-fx-font-weight: bold; -fx-font-size: 11px;"/>
+        <Label fx:id="domesticTrendLabel" text="" style="-fx-font-size: 9px;"/>
+    </HBox>
+    
+    <!-- 国际金价 (USD) -->
+    <HBox alignment="CENTER_LEFT" spacing="2">
+        <Label fx:id="internationalPriceLabel" text="Wait..." style="-fx-font-weight: bold; -fx-font-size: 11px;"/>
+        <Label fx:id="internationalTrendLabel" text="" style="-fx-font-size: 9px;"/>
+    </HBox>
 
 </VBox>

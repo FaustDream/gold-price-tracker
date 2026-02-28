@@ -22,6 +22,14 @@ public class MainApp extends Application {
 
     /**
      * JavaFX 程序的启动入口
+     * 
+     * 步骤分解：
+     * 1. 加载 Dashboard.fxml 布局文件。
+     * 2. 使用 Utility Stage 隐藏任务栏图标。
+     * 3. 初始化主舞台 (Main Stage)，设置为透明和无边框。
+     * 4. 配置场景 (Scene) 并关联控制器。
+     * 5. 显示窗口。
+     * 
      * @param primaryStage 系统自动创建的主舞台 (这里我们不直接使用它显示内容)
      */
     @Override

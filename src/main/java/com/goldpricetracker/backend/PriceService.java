@@ -58,7 +58,7 @@ public class PriceService {
      * 主方法：获取最新的价格数据
      * 流程：
      * 1. 尝试从新浪财经获取所有数据（国内金、国际金、汇率）。
-     * 2. 如果新浪的国际金价失效，尝试从备用源（Binance/Coinbase）获取。
+     * 2. 如果新浪接口的国际金价无效 (<=0)，尝试备用源 (Binance/Coinbase)。
      * 3. 对国内金价进行校验和修正（处理休市、数据异常等情况）。
      * 4. 更新缓存并返回结果。
      * 
@@ -70,7 +70,7 @@ public class PriceService {
         // 1. 获取基础数据 (新浪接口同时提供伦敦金、上海金、汇率)
         fetchFromSina(prices);
         
-        // 2. 如果新浪接口的国际金价无效 (<=0)，尝试 Binance/Coinbase
+        // 2. 如果新浪接口的国际金价无效 (<=0)，尝试从备用源获取
         if (prices.getOrDefault("international", 0.0) <= 0) {
             fetchFromBinanceOrCoinbase(prices);
         }
@@ -78,7 +78,7 @@ public class PriceService {
         // 3. 校验并修正国内金价
         validateAndFixDomesticPrice(prices);
         
-        // 更新缓存：只要获取到大于 0 的有效值，就更新缓存
+        // 4. 更新缓存：只要获取到大于 0 的有效值，就更新缓存
         if (prices.getOrDefault("international", 0.0) > 0) lastInternational = prices.get("international");
         if (prices.getOrDefault("domestic", 0.0) > 0) lastDomestic = prices.get("domestic");
         if (prices.getOrDefault("rate", 0.0) > 0) lastRate = prices.get("rate");
@@ -88,9 +88,135 @@ public class PriceService {
 
     /**
      * 允许外部注入 Clock 对象，主要用于单元测试时固定时间
+     * @param clock 时间对象
      */
     public void setClock(Clock clock) {
         this.clock = clock;
+    }
+
+    /**
+     * 从新浪财经 API 获取原始数据。
+     * 
+     * 步骤：
+     * 1. 构造 HTTP 请求。
+     * 2. 解析返回的 JS 变量格式数据。
+     * 3. 提取伦敦金、上海金和美元汇率。
+     *
+     * @param prices 用于存储解析结果的 Map
+     */
+    private void fetchFromSina(Map<String, Double> prices) {
+        Request request = new Request.Builder()
+            .url(SINA_API_URL)
+            .addHeader("Referer", "http://finance.sina.com.cn")
+            .build();
+            
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                String content = response.body().string();
+                parseSinaResponse(content, prices);
+            }
+        } catch (IOException e) {
+            logger.error("从新浪获取数据失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 解析新浪 API 返回的特殊格式字符串。
+     * 示例格式: var hq_str_hf_XAU="...";
+     */
+    private void parseSinaResponse(String content, Map<String, Double> prices) {
+        // 1. 处理国际金价 (hf_XAU)
+        if (content.contains("hf_XAU")) {
+            String[] parts = extractData(content, "hf_XAU");
+            if (parts.length > 0) {
+                try {
+                    prices.put("international", Double.parseDouble(parts[0]));
+                } catch (NumberFormatException e) {
+                    logger.warn("国际金价格式错误: " + parts[0]);
+                }
+            }
+        }
+
+        // 2. 处理国内金价 (gds_AUTD)
+        if (content.contains("gds_AUTD")) {
+            String[] parts = extractData(content, "gds_AUTD");
+            if (parts.length > 0) {
+                try {
+                    prices.put("domestic", Double.parseDouble(parts[0]));
+                } catch (NumberFormatException e) {
+                    logger.warn("国内金价格式错误: " + parts[0]);
+                }
+            }
+        }
+
+        // 3. 处理汇率 (USDCNY)
+        if (content.contains("USDCNY")) {
+            String[] parts = extractData(content, "USDCNY");
+            if (parts.length > 1) {
+                try {
+                    // 新浪汇率接口通常在第2个位置是中间价
+                    prices.put("rate", Double.parseDouble(parts[1]));
+                } catch (NumberFormatException e) {
+                    logger.warn("汇率格式错误: " + parts[1]);
+                }
+            }
+        }
+    }
+
+    /**
+     * 辅助方法：从 JS 字符串中提取数组内容
+     */
+    private String[] extractData(String content, String symbol) {
+        int start = content.indexOf(symbol + "=\"") + symbol.length() + 2;
+        int end = content.indexOf("\"", start);
+        if (start > symbol.length() + 1 && end > start) {
+            return content.substring(start, end).split(",");
+        }
+        return new String[0];
+    }
+
+    /**
+     * 备用数据源：当新浪失效时，从币安或 Coinbase 获取 Pax Gold (锚定黄金的代币) 价格。
+     * Pax Gold 价格极度接近国际现货金价，是极佳的备用参考。
+     */
+    private void fetchFromBinanceOrCoinbase(Map<String, Double> prices) {
+        // 1. 优先尝试币安
+        if (fetchFromBinance(prices)) return;
+
+        // 2. 币安失败则尝试 Coinbase
+        fetchFromCoinbase(prices);
+    }
+
+    private boolean fetchFromBinance(Map<String, Double> prices) {
+        Request request = new Request.Builder().url(BINANCE_API_URL).build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                JsonNode node = mapper.readTree(response.body().string());
+                double price = node.get("price").asDouble();
+                if (price > 0) {
+                    prices.put("international", price);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            logger.error("从币安获取数据失败: " + e.getMessage());
+        }
+        return false;
+    }
+
+    private void fetchFromCoinbase(Map<String, Double> prices) {
+        Request request = new Request.Builder().url(COINBASE_API_URL).build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                JsonNode node = mapper.readTree(response.body().string());
+                double price = node.get("data").get("amount").asDouble();
+                if (price > 0) {
+                    prices.put("international", price);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("从 Coinbase 获取数据失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -151,13 +277,10 @@ public class PriceService {
      * 核心校验逻辑：决定最终显示的国内金价
      * 
      * 逻辑如下：
-     * 1. 计算理论值：根据当前国际金价和汇率算出理论上的国内金价 (CNY/g)。
-     *    公式：(国际金价 USD/oz / 31.1034768) * 汇率 USD/CNY
-     * 2. 如果当前是休市时间 -> 强制使用理论计算值 (实现 24 小时动态更新)。
-     * 3. 如果是非休市时间：
-     *    - 如果接口返回的国内金价无效 (<=0) -> 使用计算值。
-     *    - 如果接口值与计算值偏差过大 (>5%) -> 认为是接口数据异常，使用计算值。
-     * 4. 兜底：如果以上都无效，尝试使用上次缓存的有效值。
+     * 1. 检查市场状态：
+     *    - 如果开市：直接使用 API 返回的实时国内金价。
+     *    - 如果休市：停止使用 API 的国内金价（因为它是收盘价，不会变动），
+     *      改为使用 "国际金价 * 汇率" 实时计算，以提供参考。
      */
     private void validateAndFixDomesticPrice(Map<String, Double> prices) {
         double international = prices.getOrDefault("international", lastInternational);
@@ -173,149 +296,34 @@ public class PriceService {
             calculatedDomestic = (international / 31.1034768) * rate;
         }
         
-        boolean shouldUseCalculation = false;
+        // 标记市场状态，传给前端
+        boolean marketClosed = isMarketClosed();
+        prices.put("market_closed", marketClosed ? 1.0 : 0.0);
         
-        // 判断是否休市
-        if (isMarketClosed()) {
+        if (marketClosed) {
+            // 休市期间：强制使用计算值，实现 24 小时动态更新
             if (calculatedDomestic > 0) {
-                shouldUseCalculation = true;
-                logger.info("当前为休市时间，强制使用计算值: " + calculatedDomestic);
+                prices.put("domestic", calculatedDomestic);
+                logger.debug("休市中，使用计算值: " + calculatedDomestic);
+            } else if (lastDomestic > 0) {
+                // 如果计算值也无效（例如拿不到国际金价），就保持最后的有效值
+                prices.put("domestic", lastDomestic);
             }
         } else {
-            // 非休市时间，正常校验
-            if (domestic <= 0) {
-                shouldUseCalculation = true;
+            // 开市期间：优先使用 API 返回的国内金价
+            if (domestic > 0) {
+                // 正常情况，不做修改，使用 API 值
+                // 但如果 API 值异常（例如为0），则用计算值兜底
             } else if (calculatedDomestic > 0) {
-                // 偏差校验：防止接口数据错乱
-                double diffPercent = Math.abs(domestic - calculatedDomestic) / calculatedDomestic;
-                if (diffPercent > 0.05) { // 偏差超过 5%
-                    shouldUseCalculation = true;
-                }
+                prices.put("domestic", calculatedDomestic);
+            } else if (lastDomestic > 0) {
+                prices.put("domestic", lastDomestic);
             }
-        }
-        
-        // 应用决策结果
-        if (shouldUseCalculation && calculatedDomestic > 0) {
-            prices.put("domestic", calculatedDomestic);
-        } else if (domestic <= 0 && lastDomestic > 0) {
-            prices.put("domestic", lastDomestic);
         }
         
         // 国际金价兜底
         if (prices.getOrDefault("international", 0.0) <= 0 && lastInternational > 0) {
             prices.put("international", lastInternational);
         }
-    }
-
-    /**
-     * 从新浪财经 API 获取数据
-     * 注意：必须带上 Referer 头，否则可能被反爬虫拦截返回 403
-     */
-    private void fetchFromSina(Map<String, Double> prices) {
-        Request request = new Request.Builder()
-            .url(SINA_API_URL)
-            .header("Referer", "https://finance.sina.com.cn/")
-            .header("User-Agent", "Mozilla/5.0")
-            .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                String responseBody = response.body().string();
-                parseSinaResponse(responseBody, prices);
-            }
-        } catch (Exception e) {
-            logger.warn("新浪接口获取失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 解析新浪返回的 JavaScript 格式数据
-     * 格式示例：var hq_str_hf_XAU="..."; var hq_str_gds_AUTD="...";
-     */
-    private void parseSinaResponse(String rawData, Map<String, Double> prices) {
-        String[] lines = rawData.split("\n");
-        for (String line : lines) {
-            try {
-                if (line.contains("hf_XAU")) {
-                    prices.put("international", parsePrice(line));
-                } else if (line.contains("gds_AUTD")) {
-                    prices.put("domestic", parsePrice(line));
-                } else if (line.contains("USDCNY")) {
-                    prices.put("rate", parseExchangeRate(line));
-                }
-            } catch (Exception ignored) {}
-        }
-    }
-
-    /**
-     * 解析汇率字段
-     * 针对新浪接口格式变化做了兼容处理
-     */
-    private double parseExchangeRate(String line) {
-        // 新格式示例: hq_str_USDCNY="16:47:15,6.8366,6.8376,6.8687,379,..."
-        // 旧格式示例: hq_str_USDCNY="美元人民币,6.8366,..."
-        int start = line.indexOf("\"");
-        int end = line.lastIndexOf("\"");
-        if (start > 0 && end > start) {
-            String data = line.substring(start + 1, end);
-            String[] parts = data.split(",");
-            if (parts.length > 3) {
-                // 如果第1个字段包含冒号，说明是时间，取第4个字段(索引3)作为当前价格
-                if (parts[0].contains(":")) {
-                    return Double.parseDouble(parts[3]);
-                }
-                // 否则假设是旧格式，取第2个字段(索引1)
-                return Double.parseDouble(parts[1]);
-            }
-        }
-        return 0.0;
-    }
-
-    /**
-     * 备用数据源：从 Binance 或 Coinbase 获取国际金价 (PAXG 币对)
-     * 当新浪接口挂掉时使用
-     */
-    private void fetchFromBinanceOrCoinbase(Map<String, Double> prices) {
-        try {
-            double binancePrice = fetchJsonPrice(BINANCE_API_URL, "price");
-            if (binancePrice > 0) {
-                prices.put("international", binancePrice);
-                return;
-            }
-            double coinbasePrice = fetchJsonPrice(COINBASE_API_URL, "data", "amount");
-            if (coinbasePrice > 0) {
-                prices.put("international", coinbasePrice);
-            }
-        } catch (Exception ignored) {}
-    }
-
-    // 通用的 JSON 解析辅助方法
-    private double fetchJsonPrice(String url, String... paths) {
-        Request request = new Request.Builder().url(url).build();
-        try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                JsonNode node = mapper.readTree(response.body().string());
-                for (String path : paths) {
-                    if (node.has(path)) node = node.get(path);
-                    else return 0.0;
-                }
-                return node.asDouble();
-            }
-        } catch (Exception ignored) {}
-        return 0.0;
-    }
-
-    // 解析常规价格字段 (取第1个字段)
-    private double parsePrice(String line) {
-        int start = line.indexOf("\"");
-        int end = line.lastIndexOf("\"");
-        if (start > 0 && end > start) {
-            String data = line.substring(start + 1, end);
-            String[] parts = data.split(",");
-            if (parts.length > 0) {
-                return Double.parseDouble(parts[0]);
-            }
-        }
-        return 0.0;
     }
 }

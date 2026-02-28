@@ -25,11 +25,18 @@ public class Launcher {
         // 1. 初始化日志系统 (重定向输出到文件)
         setupLogging();
         
+        // 2. 设置全局未捕获异常处理器 (捕获非 UI 线程的崩溃)
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            System.err.println("CRITICAL: Uncaught Exception in thread " + thread.getName());
+            throwable.printStackTrace();
+            // 可以选择在这里记录更详细的错误到日志
+        });
+        
         try {
-            // 2. 启动 JavaFX 主程序
+            // 3. 启动 JavaFX 主程序
             MainApp.main(args);
         } catch (Throwable t) {
-            // 3. 全局异常捕获
+            // 4. 启动时异常捕获
             t.printStackTrace(); // 堆栈信息将写入日志文件
             
             // 弹出原生 Swing 错误框通知用户 (Swing 依赖较少，适合做崩溃弹窗)
