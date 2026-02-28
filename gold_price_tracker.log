@@ -681,3 +681,9 @@ Application Started at Sat Feb 28 14:13:06 CST 2026
 ==================================================
 2月 28, 2026 2:13:07 下午 com.sun.javafx.application.PlatformImpl startup
 警告: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @795d6acc'
+
+==================================================
+Application Started at Sat Feb 28 14:24:11 CST 2026
+==================================================
+2月 28, 2026 2:24:11 下午 com.sun.javafx.application.PlatformImpl startup
+警告: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @178b1607'

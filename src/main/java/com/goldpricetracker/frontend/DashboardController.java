@@ -13,6 +13,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -419,18 +420,22 @@ public class DashboardController {
     }
 
     private void loadWindowPosition() {
-        String x = config.getProperty("window.x");
-        String y = config.getProperty("window.y");
-        String locked = config.getProperty("window.locked");
-        String tbMode = config.getProperty("window.taskbar_mode");
-        
-        if (stage != null) {
-            if (x != null && y != null) {
-                stage.setX(Double.parseDouble(x));
-                stage.setY(Double.parseDouble(y));
+        try {
+            String x = config.getProperty("window.x");
+            String y = config.getProperty("window.y");
+            String locked = config.getProperty("window.locked");
+            String tbMode = config.getProperty("window.taskbar_mode");
+            
+            if (stage != null) {
+                if (x != null && y != null) {
+                    stage.setX(Double.parseDouble(x));
+                    stage.setY(Double.parseDouble(y));
+                }
+                if (locked != null) isLocked = Boolean.parseBoolean(locked);
+                if (tbMode != null) isTaskbarMode = Boolean.parseBoolean(tbMode);
             }
-            if (locked != null) isLocked = Boolean.parseBoolean(locked);
-            if (tbMode != null) isTaskbarMode = Boolean.parseBoolean(tbMode);
+        } catch (Exception e) {
+            System.err.println("Failed to load window position: " + e.getMessage());
         }
     }
 }
