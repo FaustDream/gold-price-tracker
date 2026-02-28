@@ -14,6 +14,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -30,20 +31,15 @@ import java.util.TimerTask;
 
 /**
  * 主界面控制器：负责处理 UI 逻辑、数据更新和用户交互。
- * 
- * 更新内容：
- * 1. 布局改为 HBox 以适应任务栏。
- * 2. 增加任务栏自动停靠功能 (Auto-Dock)。
- * 3. 增加价格趋势指示器 (▲/▼)。
  */
 public class DashboardController {
 
     // FXML 绑定的 UI 控件
-    @FXML private HBox rootBox; // 改为 HBox
+    @FXML private VBox rootBox; // 改回 VBox 以实现上下排列
     @FXML private Label domesticPriceLabel; 
     @FXML private Label internationalPriceLabel; 
-    @FXML private Label domesticTrendLabel; // 新增趋势标签
-    @FXML private Label internationalTrendLabel; // 新增趋势标签
+    @FXML private Label domesticTrendLabel; 
+    @FXML private Label internationalTrendLabel; 
 
     // 后端服务实例
     private final PriceService priceService = new PriceService();
@@ -70,8 +66,8 @@ public class DashboardController {
     public void initialize() {
         loadConfig();
         
-        // 设置默认样式：深色背景，模仿任务栏
-        rootBox.setStyle("-fx-background-color: rgba(30, 30, 30, 0.85); -fx-background-radius: 5; -fx-padding: 0 10;");
+        // 设置默认样式：深色背景，圆角
+        rootBox.setStyle("-fx-background-color: rgba(30, 30, 30, 0.85); -fx-background-radius: 5; -fx-padding: 2 8;");
         
         applySettings();
         
@@ -84,10 +80,12 @@ public class DashboardController {
         this.stage = stage;
         loadWindowPosition();
         
-        // 如果是任务栏模式，初始时进行一次定位
-        if (isTaskbarMode) {
-            Platform.runLater(this::dockToTaskbar);
-        }
+        // 初始停靠逻辑
+        Platform.runLater(() -> {
+            if (isTaskbarMode) {
+                dockToTaskbar();
+            }
+        });
         
         stage.setOnCloseRequest(event -> saveWindowPosition());
     }
@@ -95,28 +93,29 @@ public class DashboardController {
     private void loadConfig() {
         try (InputStream input = new FileInputStream(CONFIG_FILE)) {
             config.load(input);
+            // 从配置中恢复停靠模式，默认 true
+            isTaskbarMode = Boolean.parseBoolean(config.getProperty("window.taskbar_mode", "true"));
+            isLocked = Boolean.parseBoolean(config.getProperty("window.locked", "false"));
         } catch (IOException ignored) {}
     }
 
     // 应用配置中的样式设置 (背景色、字体大小等)
     public void applySettings() {
-        String bg = config.getProperty("color.bg", "transparent"); // 默认透明
+        String bg = config.getProperty("color.bg", "rgba(30, 30, 30, 0.85)"); 
         String domesticColor = config.getProperty("color.domestic", "#FFD700");
         String internationalColor = config.getProperty("color.international", "#FFFFFF");
-        String fontSize = config.getProperty("font.size", "12");
+        String fontSize = config.getProperty("font.size", "11");
 
-        rootBox.setStyle(String.format("-fx-background-color: %s; -fx-background-radius: 5; -fx-padding: 0 10;", bg));
+        rootBox.setStyle(String.format("-fx-background-color: %s; -fx-background-radius: 5; -fx-padding: 2 8;", bg));
         
         String fontStyle = String.format("-fx-font-family: 'Segoe UI', sans-serif; -fx-font-size: %spx; -fx-font-weight: bold;", fontSize);
         domesticPriceLabel.setStyle(fontStyle + " -fx-text-fill: " + domesticColor + ";");
         internationalPriceLabel.setStyle(fontStyle + " -fx-text-fill: " + internationalColor + ";");
         
         // 趋势标签样式
-        String trendStyle = "-fx-font-family: 'Segoe UI', sans-serif; -fx-font-size: 10px;";
+        String trendStyle = "-fx-font-family: 'Segoe UI', sans-serif; -fx-font-size: 9px;";
         domesticTrendLabel.setStyle(trendStyle);
         internationalTrendLabel.setStyle(trendStyle);
-        
-        rootBox.setMinHeight(30); // 适应任务栏高度
     }
 
     private void setupContextMenu() {
@@ -127,31 +126,33 @@ public class DashboardController {
         startupItem.setOnAction(e -> StartupManager.setStartup(startupItem.isSelected()));
         
         // 任务栏停靠开关
-        CheckMenuItem taskbarModeItem = new CheckMenuItem("停靠任务栏");
+        CheckMenuItem taskbarModeItem = new CheckMenuItem("自动停靠任务栏");
         taskbarModeItem.setSelected(isTaskbarMode);
         taskbarModeItem.setOnAction(e -> {
             isTaskbarMode = taskbarModeItem.isSelected();
             if (isTaskbarMode) {
                 dockToTaskbar();
             }
+            saveConfig();
         });
         
-        MenuItem settingsItem = new MenuItem("设置");
-        settingsItem.setOnAction(e -> openSettings());
-
-        MenuItem toggleLockItem = new MenuItem("锁定位置");
+        MenuItem toggleLockItem = new MenuItem(isLocked ? "解锁位置" : "锁定位置");
         toggleLockItem.setOnAction(e -> {
             isLocked = !isLocked;
             toggleLockItem.setText(isLocked ? "解锁位置" : "锁定位置");
+            saveConfig();
         });
+
+        MenuItem settingsItem = new MenuItem("更多设置");
+        settingsItem.setOnAction(e -> openSettings());
         
-        MenuItem exitItem = new MenuItem("退出");
+        MenuItem exitItem = new MenuItem("退出程序");
         exitItem.setOnAction(e -> {
             saveWindowPosition();
             System.exit(0);
         });
         
-        contextMenu.getItems().addAll(startupItem, taskbarModeItem, settingsItem, toggleLockItem, exitItem);
+        contextMenu.getItems().addAll(startupItem, taskbarModeItem, toggleLockItem, settingsItem, exitItem);
         
         rootBox.setOnContextMenuRequested(event -> 
             contextMenu.show(rootBox, event.getScreenX(), event.getScreenY())
@@ -160,26 +161,36 @@ public class DashboardController {
     
     private void setupWindowDragging() {
         rootBox.setOnMousePressed(event -> {
-            // 只有非锁定且非任务栏模式下才允许拖动
-            if (!isLocked && !isTaskbarMode && event.getButton() == MouseButton.PRIMARY) {
+            // 只要未锁定就允许记录偏移
+            if (!isLocked && event.getButton() == MouseButton.PRIMARY) {
                 xOffset = event.getSceneX();
                 yOffset = event.getSceneY();
             }
         });
         rootBox.setOnMouseDragged(event -> {
-            if (!isLocked && !isTaskbarMode && event.getButton() == MouseButton.PRIMARY && stage != null) {
+            // 只要未锁定就允许移动
+            if (!isLocked && event.getButton() == MouseButton.PRIMARY && stage != null) {
+                // 如果正在拖动，自动临时禁用“自动停靠”模式，直到用户重新开启
+                if (isTaskbarMode) {
+                    isTaskbarMode = false;
+                    // 更新右键菜单状态 (如果有引用的话，这里直接通过 saveConfig 体现)
+                }
                 stage.setX(event.getScreenX() - xOffset);
                 stage.setY(event.getScreenY() - yOffset);
             }
         });
         rootBox.setOnMouseReleased(event -> {
-            if (!isLocked && !isTaskbarMode && event.getButton() == MouseButton.PRIMARY) saveWindowPosition();
+            if (!isLocked && event.getButton() == MouseButton.PRIMARY) {
+                saveWindowPosition();
+                saveConfig(); // 保存 isTaskbarMode 的变更
+            }
         });
     }
 
     private void saveConfig() {
         try (OutputStream output = new FileOutputStream(CONFIG_FILE)) {
             config.setProperty("window.taskbar_mode", String.valueOf(isTaskbarMode));
+            config.setProperty("window.locked", String.valueOf(isLocked));
             config.store(output, null);
         } catch (IOException e) {
             e.printStackTrace();

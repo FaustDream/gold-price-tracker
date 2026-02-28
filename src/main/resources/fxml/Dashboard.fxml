@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.Region?>
 
-<HBox fx:id="rootBox" alignment="CENTER_LEFT" spacing="10" 
+<VBox fx:id="rootBox" alignment="CENTER_LEFT" spacing="0" 
       xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
       fx:controller="com.goldpricetracker.frontend.DashboardController"
       style="-fx-background-color: transparent; -fx-padding: 2 5;">
@@ -16,12 +16,10 @@
         <Label fx:id="domesticTrendLabel" text="" style="-fx-font-size: 9px;"/>
     </HBox>
     
-    <Region HBox.hgrow="ALWAYS" minWidth="5" />
-
     <!-- 国际金价 (USD) -->
     <HBox alignment="CENTER_LEFT" spacing="2">
         <Label fx:id="internationalPriceLabel" text="Wait..." style="-fx-font-weight: bold; -fx-font-size: 11px;"/>
         <Label fx:id="internationalTrendLabel" text="" style="-fx-font-size: 9px;"/>
     </HBox>
 
-</HBox>
+</VBox>
