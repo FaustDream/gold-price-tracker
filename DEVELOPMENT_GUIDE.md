@@ -1,24 +1,26 @@
-# GoldPriceTracker 开发指南 (小白入门版)
+# GoldPriceTracker 开发指南 · v1.6
 
 本文档旨在帮助编程新手快速理解、运行并复刻 `GoldPriceTracker` (黄金价格追踪器) 项目。
 
 ---
 
-## 1. 项目简介
+## 1. 项目简介（最新版本特性）
 
 这是一个基于 **JavaFX** 开发的 Windows 桌面小工具。
-**核心功能**：实时显示国际金价（伦敦金）和国内金价（上海金），支持窗口置顶、透明背景、价格预警和开机自启。
+核心功能：实时显示国际金价（伦敦金）和国内金价（上海金），支持窗口置顶、透明背景、托盘操控（置顶/锁定/穿透/吸附），以及价格预警。
 
 ### 技术栈 (Tech Stack)
 *   **语言**: Java 17+
-*   **UI 框架**: JavaFX (用于画界面)
-*   **构建工具**: Maven (用于管理依赖库)
-*   **网络请求**: OkHttp3 (用于抓取金价数据)
-*   **JSON 解析**: Jackson (用于解析 API 返回的数据)
+*   **UI 框架**: JavaFX
+*   **构建工具**: Maven
+*   **网络请求**: OkHttp3
+*   **JSON 解析**: Jackson
+*   **原生接口**: JNA（置顶与穿透）
+*   **本地服务**: jdk.httpserver（PriceDataServer）
 
 ---
 
-## 2. 快速开始 (如何运行)
+## 2. 快速开始（如何运行）
 
 ### 环境准备
 1.  **安装 JDK 17+**: 推荐下载 Microsoft OpenJDK 或 Oracle JDK。
@@ -26,18 +28,14 @@
 3.  **IDE**: 推荐使用 IntelliJ IDEA 或 VS Code (安装 Java 插件包)。
 
 ### 运行步骤
-1.  **克隆代码**:
-    ```bash
-    git clone https://github.com/YourUsername/gold-price-tracker.git
-    cd gold-price-tracker
+1.  **开发运行（无需打包）**:
+    ```powershell
+    powershell -ExecutionPolicy Bypass -File scripts/dev-run.ps1
     ```
-2.  **编译项目**:
-    ```bash
-    mvn clean package
+2.  **一键打包**:
+    ```powershell
+    powershell -ExecutionPolicy Bypass -File scripts/package.ps1
     ```
-3.  **运行程序**:
-    *   **方式 A (Maven 插件)**: `mvn javafx:run`
-    *   **方式 B (运行 Jar 包)**: `java -jar target/gold-price-tracker-1.1.0-shaded.jar`
 
 ---
 
@@ -65,16 +63,11 @@
     *   `VBox`: 一个垂直排列的盒子，作为最外层容器。
     *   `Label`: 用来显示文字的标签（比如“国内金价：450.50”）。
 
-### 3.3 怎么实现“透明窗口”和“隐藏任务栏图标”？
-这是本项目的“黑科技”部分，主要在 `MainApp.java` 中实现。
+### 3.3 透明窗口与托盘菜单（中文不乱码）
+*   透明窗口：`StageStyle.TRANSPARENT` + `Scene.setFill(Color.TRANSPARENT)`。
+*   托盘菜单：使用 **Swing JPopupMenu** 替代 AWT PopupMenu，动态选择中文字体（优先 Microsoft YaHei UI/微软雅黑/宋体/SimSun 等），避免中文显示为方框。
 
-*   **透明窗口**: 设置 `StageStyle.TRANSPARENT`，并让 `Scene` 的背景色为 `Color.TRANSPARENT`。
-*   **隐藏任务栏图标**:
-    1.  创建一个看不见的 `Utility Stage` (工具窗口)。
-    2.  让我们的主窗口认这个看不见的窗口做“干爹” (`initOwner`)。
-    3.  因为工具窗口不显示图标，作为它“儿子”的主窗口也就跟着不显示了。
-
-### 3.4 为什么休市了还能更新价格？(业务逻辑)
+### 3.4 为什么休市了还能更新价格？（业务逻辑）
 国内黄金交易所（上海金）在晚上和周末会休市，价格不动。为了让你时刻看到参考价，我们做了一个自动切换逻辑：
 
 *   **开市时**: 直接显示交易所的报价。
@@ -82,13 +75,20 @@
     *   **公式**: `(国际金价 USD/oz ÷ 31.1034768) × 汇率 USD/CNY`
     *   **代码位置**: `PriceService.java` 中的 `validateAndFixDomesticPrice` 方法。
 
----
+### 3.5 置顶与穿透如何实现？（原生样式）
+*   置顶：`Stage.setAlwaysOnTop(true)` + `SetWindowPos(HWND_TOPMOST | SWP_NOACTIVATE)`
+*   穿透：`WS_EX_TRANSPARENT | WS_EX_LAYERED`（JNA 设置扩展样式）+ `Node.setMouseTransparent(true)` 回退
+*   封装位置：`com.goldpricetracker.backend.WindowStyleHelper`
 
-## 4. 配置文件是如何工作的？
+## 4. 配置文件如何工作？
 
 项目使用标准的 Java `.properties` 文件来保存设置（如颜色、字体大小）。
 
 *   **文件位置**: 运行目录下生成的 `gold_tracker_config.properties`。
+*   **键位（v1.6）**：
+    - `window.x` / `window.y`：位置保存
+    - `window.always_on_top` / `window.locked` / `window.click_through`
+    - `snap_to_edges` / `font.size` / `lang` / `autostart`
 *   **读取配置**:
     ```java
     Properties config = new Properties();
@@ -116,20 +116,20 @@
 ### 5.2 举一反三 (做点别的)
 学会了这个框架，你可以轻松制作其他桌面小工具：
 
-*   **股票盯盘助手**: 把 API 地址换成股票接口 (如新浪股票 `list=sh600519`)，解析逻辑改一下，界面逻辑完全不用动。
+*   **股票盯盘助手**: 把 API 地址换成股票接口 (如新浪股票 `list=sh600519`)，解析逻辑改一下，界面逻辑保持不变。
 *   **加密货币监视器**: 把 API 换成 Binance 或 CoinGecko 的 API，解析 JSON 数据。
 *   **天气小组件**: 找一个免费的天气 API，显示当前温度和天气图标。
 
 ---
 
-## 6. 常见问题 (FAQ)
+## 6. 常见问题（FAQ）
 
-*   **Q: 为什么运行后看不到窗口？**
-    *   A: 可能是因为背景色设置成了全透明，或者坐标跑到了屏幕外面。尝试删除 `gold_tracker_config.properties` 文件重置设置。
-*   **Q: 为什么显示价格为 0.00？**
-    *   A: 检查网络是否通畅。有些公司内网会屏蔽新浪财经接口。
-*   **Q: 打包成 EXE 后双击没反应？**
-    *   A: 检查同目录下的 `gold_price_tracker.log` 日志文件，查看具体报错信息。
+*   Q: 托盘中文菜单显示为方框？
+    *   A: v1.6 改用 Swing JPopupMenu 并动态选择中文字体，确保中文正常显示。
+*   Q: 置顶或穿透不起作用？
+    *   A: 确认托盘菜单的“始终置顶”“鼠标穿透”已勾选；日志中查看 WindowStyleHelper 操作结果。
+*   Q: 打包后双击没反应？
+    *   A: 查看 `gold_price_tracker.log` 日志信息；确保使用 `scripts/package.ps1` 生成的目录运行。
 
 ---
 

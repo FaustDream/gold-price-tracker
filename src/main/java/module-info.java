@@ -8,6 +8,7 @@ module com.goldpricetracker {
     requires com.sun.jna.platform;
     requires org.slf4j;
     requires java.desktop;
+    requires jdk.httpserver;
 
     opens com.goldpricetracker to javafx.graphics, javafx.fxml;
     opens com.goldpricetracker.frontend to javafx.fxml;

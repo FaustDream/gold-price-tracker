@@ -60,6 +60,8 @@ public class MainApp extends Application {
         mainStage.initOwner(utilityStage); // 设置归属关系
         mainStage.initStyle(StageStyle.TRANSPARENT); // 设置为透明风格 (无标题栏、无边框)
         mainStage.setAlwaysOnTop(true); // 默认置顶
+        mainStage.setTitle("GoldPriceTracker_Main"); // 设置唯一标题，便于 JNA 查找
+
         
         // 4. 配置场景 (Scene)
         Scene scene = new Scene(root);

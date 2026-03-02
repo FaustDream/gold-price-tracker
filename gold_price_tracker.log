@@ -1,0 +1,186 @@
+
+==================================================
+Application Started at Mon Mar 02 11:43:11 CST 2026
+Log file location: D:\TraeAIProJect\gold-price-tracker\gold_price_tracker.log
+Java version: 21.0.9
+OS: Windows 11 10.0
+Working Directory: D:\TraeAIProJect\gold-price-tracker
+==================================================
+PriceDataServer started on http://127.0.0.1:9876
+DashboardController: Config file not found or error loading.
+DashboardController: setStage called.
+Diagnostics: Window size used for dock calc: 95.0x46.0
+TaskbarLocator: Calculating dock location for window size: 95.0x46.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 755.5714285714286, 639.7142857142857
+TaskbarLocator: JNA location found: 755.5714285714286, 639.7142857142857
+Diagnostics: Computed dock location: 755.5714285714286, 639.7142857142857
+Diagnostics: Current stage location: 913.0, 369.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Calculating dock location for window size: 71.0x36.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 779.5714285714286, 649.7142857142857
+TaskbarLocator: JNA location found: 779.5714285714286, 649.7142857142857
+AdaptPlace: Final size 71.0x36.0, placed at 779.5714285714286, 649.7142857142857
+
+==================================================
+Application Started at Mon Mar 02 13:55:25 CST 2026
+Log file location: D:\TraeAIProJect\gold-price-tracker\gold_price_tracker.log
+Java version: 21.0.9
+OS: Windows 11 10.0
+Working Directory: D:\TraeAIProJect\gold-price-tracker
+==================================================
+PriceDataServer started on http://127.0.0.1:9876
+DashboardController: Config file not found or error loading.
+DashboardController: setStage called.
+Diagnostics: Window size used for dock calc: 95.0x46.0
+TaskbarLocator: Calculating dock location for window size: 95.0x46.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 755.5714285714286, 639.7142857142857
+TaskbarLocator: JNA location found: 755.5714285714286, 639.7142857142857
+Diagnostics: Computed dock location: 755.5714285714286, 639.7142857142857
+Diagnostics: Current stage location: 913.0, 369.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Calculating dock location for window size: 62.0x36.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 788.5714285714286, 649.7142857142857
+TaskbarLocator: JNA location found: 788.5714285714286, 649.7142857142857
+AdaptPlace: Final size 62.0x36.0, placed at 788.5714285714286, 649.7142857142857
+
+==================================================
+Application Started at Mon Mar 02 14:01:17 CST 2026
+Log file location: D:\TraeAIProJect\gold-price-tracker\gold_price_tracker.log
+Java version: 21.0.9
+OS: Windows 11 10.0
+Working Directory: D:\TraeAIProJect\gold-price-tracker
+==================================================
+PriceDataServer started on http://127.0.0.1:9876
+DashboardController: Config loaded.
+DashboardController: setStage called.
+Diagnostics: Window size used for dock calc: 95.0x46.0
+TaskbarLocator: Calculating dock location for window size: 95.0x46.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 755.5714285714286, 639.7142857142857
+TaskbarLocator: JNA location found: 755.5714285714286, 639.7142857142857
+Diagnostics: Computed dock location: 755.5714285714286, 639.7142857142857
+Diagnostics: Current stage location: 913.0, 369.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Calculating dock location for window size: 62.0x36.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 788.5714285714286, 649.7142857142857
+TaskbarLocator: JNA location found: 788.5714285714286, 649.7142857142857
+AdaptPlace: Final size 62.0x36.0, placed at 788.5714285714286, 649.7142857142857
+
+==================================================
+Application Started at Mon Mar 02 14:07:14 CST 2026
+Log file location: D:\TraeAIProJect\gold-price-tracker\gold_price_tracker.log
+Java version: 21.0.9
+OS: Windows 11 10.0
+Working Directory: D:\TraeAIProJect\gold-price-tracker
+==================================================
+PriceDataServer started on http://127.0.0.1:9876
+DashboardController: Config loaded.
+DashboardController: setStage called.
+Diagnostics: Window size used for dock calc: 95.0x46.0
+TaskbarLocator: Calculating dock location for window size: 95.0x46.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 755.5714285714286, 639.7142857142857
+TaskbarLocator: JNA location found: 755.5714285714286, 639.7142857142857
+Diagnostics: Computed dock location: 755.5714285714286, 639.7142857142857
+Diagnostics: Current stage location: 913.0, 369.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Calculating dock location for window size: 62.0x36.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 788.5714285714286, 649.7142857142857
+TaskbarLocator: JNA location found: 788.5714285714286, 649.7142857142857
+AdaptPlace: Final size 62.0x36.0, placed at 788.5714285714286, 649.7142857142857
+
+==================================================
+Application Started at Mon Mar 02 14:17:50 CST 2026
+Log file location: D:\TraeAIProJect\gold-price-tracker\gold_price_tracker.log
+Java version: 21.0.9
+OS: Windows 11 10.0
+Working Directory: D:\TraeAIProJect\gold-price-tracker
+==================================================
+PriceDataServer started on http://127.0.0.1:9876
+DashboardController: Config loaded.
+DashboardController: setStage called.
+Diagnostics: Window size used for dock calc: 95.0x46.0
+TaskbarLocator: Calculating dock location for window size: 95.0x46.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 755.5714285714286, 639.7142857142857
+TaskbarLocator: JNA location found: 755.5714285714286, 639.7142857142857
+Diagnostics: Computed dock location: 755.5714285714286, 639.7142857142857
+Diagnostics: Current stage location: 913.0, 369.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Calculating dock location for window size: 62.0x36.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 788.5714285714286, 649.7142857142857
+TaskbarLocator: JNA location found: 788.5714285714286, 649.7142857142857
+AdaptPlace: Final size 62.0x36.0, placed at 788.5714285714286, 649.7142857142857
+
+==================================================
+Application Started at Mon Mar 02 14:18:42 CST 2026
+Log file location: D:\TraeAIProJect\gold-price-tracker\gold_price_tracker.log
+Java version: 21.0.9
+OS: Windows 11 10.0
+Working Directory: D:\TraeAIProJect\gold-price-tracker
+==================================================
+PriceDataServer started on http://127.0.0.1:9876
+DashboardController: Config loaded.
+DashboardController: setStage called.
+Diagnostics: Window size used for dock calc: 95.0x46.0
+TaskbarLocator: Calculating dock location for window size: 95.0x46.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 755.5714285714286, 639.7142857142857
+TaskbarLocator: JNA location found: 755.5714285714286, 639.7142857142857
+Diagnostics: Computed dock location: 755.5714285714286, 639.7142857142857
+Diagnostics: Current stage location: 913.0, 369.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Calculating dock location for window size: 62.0x36.0
+TaskbarLocator: Screen DPI=162.0, OutputScaleX=1.0
+TaskbarLocator: Using DPI-calculated scale: 1.75
+TaskbarLocator: Taskbar Rect (Scaled): [0.000000, 658.285714, 1097.142857, 685.714286]
+TaskbarLocator: Tray Left (Scaled): 852.571429
+TaskbarLocator: Computed JNA Location: 788.5714285714286, 649.7142857142857
+TaskbarLocator: JNA location found: 788.5714285714286, 649.7142857142857
+AdaptPlace: Final size 62.0x36.0, placed at 788.5714285714286, 649.7142857142857

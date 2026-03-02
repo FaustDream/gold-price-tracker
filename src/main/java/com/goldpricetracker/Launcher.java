@@ -4,7 +4,6 @@ import javax.swing.JOptionPane;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.io.File;
-import java.net.URI;
 import java.util.Date;
 
 /**
@@ -36,6 +35,8 @@ public class Launcher {
         
         try {
             // 3. 启动 JavaFX 主程序
+            // 3.1 启动本地数据服务 (供原生 AppBar 或其他前端拉取)
+            com.goldpricetracker.backend.PriceDataServer.startAsync();
             MainApp.main(args);
         } catch (Throwable t) {
             // 4. 启动时异常捕获
@@ -56,15 +57,8 @@ public class Launcher {
      */
     private static void setupLogging() {
         try {
-            // 获取程序运行所在的目录，确保日志文件生成在软件同目录下
-            String jarPath = Launcher.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-            File jarFile = new File(jarPath);
-            File logFile = new File(jarFile.getParent(), "gold_price_tracker.log");
-            
-            // 如果是在开发环境下（target/classes），则直接用当前目录
-            if (!jarFile.getName().endsWith(".jar")) {
-                logFile = new File("gold_price_tracker.log");
-            }
+            // 直接使用当前工作目录 (软件根目录)
+            File logFile = new File("gold_price_tracker.log");
 
             // 追加模式 (true)，每次启动不覆盖旧日志
             FileOutputStream fos = new FileOutputStream(logFile, true);

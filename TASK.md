@@ -1,44 +1,37 @@
-# Gold Price Tracker 任务清单 (v1.3)
+# 任务列表 (v1.6)
 
-## 🎯 当前目标
-清理项目残留，规范化代码注释，并发布 v1.3 版本。
+## 待办任务 (Todo)
 
-## 📋 任务列表
 
-### 1. 项目清理与初始化 [已完成]
-- [x] 删除 `build/` 目录 (Python 遗留)
-- [x] 删除 `gold-backend.spec` (Python 遗留)
-- [x] 删除 `dependency-reduced-pom.xml` (Maven 遗留)
-- [x] 创建 `chats/` 目录用于对话管理
-- [x] 初始化 `TASK.md` 任务追踪
+## 进行中 (In Progress)
 
-### 2. 版本管理 [已完成]
-- [x] 将 `pom.xml` 中的版本号从 1.2.0 升级为 1.3.0
-- [x] 在 `release/1.3/` 下打包发布可执行文件 (JAR & EXE)
-- [x] 使用 `jpackage` 生成免安装 EXE 软件包
-- [x] 确保 `.gitignore` 已忽略 `release/` 文件夹
-- [x] 将所有更改提交并推送至 GitHub 远程仓库 (origin/main)
+## 已完成 (Done)
 
-### 3. 代码规范化 (根据 CLAUDE.md) [已完成]
-- [x] 为 `PriceService.java` 添加详细的中文步骤注释和 Javadoc
-- [x] 为 `MainApp.java` 添加详细的中文步骤注释和 Javadoc
-- [x] 在 `CLAUDE.md` 中新增 `INITIAL.md` 任务追踪规则
-- [x] 在 `INITIAL.md` 中标识已完成的任务
+- [x] 自由移动与锁定（DashboardController.setupDragging，实现拖拽与锁定、位置保存）
+- [x] 贴边吸附（阈值 8px，靠近屏幕边缘自动贴边）
+- [x] 始终置顶开关（JavaFX setAlwaysOnTop + 原生 SetWindowPos(HWND_TOPMOST|SWP_NOACTIVATE)）
+- [x] 鼠标穿透开关（原生 WS_EX_TRANSPARENT|WS_EX_LAYERED + JavaFX mouseTransparent）
+- [x] 托盘图标与菜单（Swing JPopupMenu 中文正常显示，包含置顶/锁定/穿透/吸附/设置/均价/退出）
+- [x] 动态压缩上下布局高度（任务栏高度受限时自动压缩字体与间距）
+- [x] 配置持久化（window.x/y、always_on_top、locked、click_through、snap_to_edges、font.size、lang）
+- [x] 打包与开发运行脚本（package.ps1、dev-run.ps1）
 
-### 4. 验证与发布 [已完成]
-- [x] 运行 `mvn clean package` 并复制依赖到 `target/libs`
-- [x] 引入 `module-info.java` 将项目模块化，解决 JavaFX 运行时冲突
-- [x] 修复 JavaFX 渲染/事件导致的闪退问题 (移除 Shade 插件，改用原生模块打包)
-- [x] 修复 FXML 布局不一致导致的启动闪退问题 (VBox -> HBox)
-- [x] 再次修复布局问题：将价格恢复为上下垂直排列 (HBox -> VBox)
-- [x] 增加自动停靠任务栏功能，默认开启
-- [x] 优化拖拽逻辑：未锁定时允许手动拖拽，并自动解除任务栏停靠模式
-- [x] 优化日志记录逻辑：日志文件现在自动生成在软件 EXE 同级目录下
-- [x] 清理 release 目录中的旧版本文件
-- [x] 使用 `jpackage` 结合 `--module-path` 和 `--add-opens` 彻底解决 `MouseEvent$Flags` 闪退
-- [x] 验证 `release/1.3/gold-price-tracker-1.3.0.exe/` 运行正常
-- [x] 运行 `mvn test` 验证单元测试通过
+## 历史版本已完成（摘要）
+- v1.4：均价计算器、透明背景、单行横向模式、字体优化、停靠逻辑与打包
+- v1.5：取消任务栏物理嵌入，改为上下布局与稳定定位（后续转向 1.6 方案）
 
----
-*创建日期: 2026-02-28*
-*最后更新: 2026-02-28*
+- [x] **3. 增强窗口移动与锁定逻辑**
+    - [x] **TaskbarLocator 升级**：获取任务栏的具体矩形区域 (Bounds)。
+    - [x] **DashboardController 改造**：
+        - [x] 实现 `Taskbar Mode + Locked`：固定在托盘旁，禁止拖动。
+        - [x] 实现 `Taskbar Mode + Unlocked`：限制拖动范围在任务栏区域内。
+        - [x] 实现 `Desktop Mode + Locked`：禁止拖动。
+        - [x] 实现 `Desktop Mode + Unlocked`：全屏自由拖动。
+    - [x] 确保自动停靠时不遮挡系统托盘（需要精确计算偏移量）。
+
+- [x] **4. 版本发布准备**
+    - [x] 更新 `pom.xml` 版本号至 `1.4.0`。
+    - [x] 运行所有单元测试 (`mvn test`)。
+    - [x] 执行打包脚本 (`scripts/package.ps1`)。
+    - [x] 验证生成的 EXE 文件。
+    - [x] 更新 `INITIAL.md` 和 `README.md`。

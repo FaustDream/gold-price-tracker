@@ -5,21 +5,21 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.Region?>
 
-<VBox fx:id="rootBox" alignment="CENTER_LEFT" spacing="0" 
+<VBox fx:id="rootBox" alignment="CENTER_LEFT" spacing="6" 
       xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
       fx:controller="com.goldpricetracker.frontend.DashboardController"
-      style="-fx-background-color: transparent; -fx-padding: 2 5;">
+      style="-fx-background-color: transparent; -fx-padding: 4 10;">
     
-    <!-- 国内金价 (CNY) -->
-    <HBox alignment="CENTER_LEFT" spacing="2">
-        <Label fx:id="domesticPriceLabel" text="Loading..." style="-fx-font-weight: bold; -fx-font-size: 11px;"/>
-        <Label fx:id="domesticTrendLabel" text="" style="-fx-font-size: 9px;"/>
+    <!-- 国内金价 (CNY) 在上 -->
+    <HBox alignment="CENTER_LEFT" spacing="6">
+        <Label fx:id="domesticPriceLabel" text="Loading..." style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 0 6 0 0;"/>
+        <Label fx:id="domesticTrendLabel" text="" style="-fx-font-size: 12px; -fx-padding: 0 0 0 2;"/>
     </HBox>
     
-    <!-- 国际金价 (USD) -->
-    <HBox alignment="CENTER_LEFT" spacing="2">
-        <Label fx:id="internationalPriceLabel" text="Wait..." style="-fx-font-weight: bold; -fx-font-size: 11px;"/>
-        <Label fx:id="internationalTrendLabel" text="" style="-fx-font-size: 9px;"/>
+    <!-- 国际金价 (USD) 在下 -->
+    <HBox alignment="CENTER_LEFT" spacing="6">
+        <Label fx:id="internationalPriceLabel" text="Wait..." style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 0 6 0 0;"/>
+        <Label fx:id="internationalTrendLabel" text="" style="-fx-font-size: 12px; -fx-padding: 0 0 0 2;"/>
     </HBox>
 
 </VBox>

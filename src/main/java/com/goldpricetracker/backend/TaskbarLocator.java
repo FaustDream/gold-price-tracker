@@ -7,117 +7,201 @@ import javafx.stage.Screen;
 
 /**
  * 任务栏定位工具类 (基于 JNA)
- * 
- * 功能：
- * 1. 查找 Windows 任务栏的句柄 (Shell_TrayWnd)。
- * 2. 获取任务栏的位置和尺寸。
- * 3. 查找系统托盘区域 (TrayNotifyWnd) 的位置，以便将程序停靠在它旁边。
  */
 public class TaskbarLocator {
 
-    /**
-     * 获取任务栏的有效停靠区域
-     * 
-     * 策略：
-     * 我们试图将窗口放置在任务栏的“托盘区”左侧，或者如果没有托盘区，就放在任务栏的最右侧。
-     * 
-     * @param windowWidth 我们的窗口宽度
-     * @param windowHeight 我们的窗口高度
-     * @return 屏幕坐标 (X, Y)
-     */
-    public static Point getDockLocation(double windowWidth, double windowHeight) {
-        try {
-            User32 user32 = User32.INSTANCE;
-
-            // 1. 查找主任务栏窗口
-            WinDef.HWND taskbarHwnd = user32.FindWindow("Shell_TrayWnd", null);
-            if (taskbarHwnd == null) {
-                return getDefaultLocation(windowWidth, windowHeight);
-            }
-
-            // 2. 获取任务栏的矩形区域
-            WinDef.RECT taskbarRect = new WinDef.RECT();
-            if (!user32.GetWindowRect(taskbarHwnd, taskbarRect)) {
-                return getDefaultLocation(windowWidth, windowHeight);
-            }
-
-            // 3. 尝试查找托盘通知区域 (TrayNotifyWnd)
-            WinDef.HWND trayHwnd = user32.FindWindowEx(taskbarHwnd, null, "TrayNotifyWnd", null);
-            
-            // 5. 关键：查找托盘区域的"溢出按钮" (Button)，通常在 TrayNotifyWnd 的最左侧
-            // 如果能找到 TrayNotifyWnd，就以它的左边界为基准
-            
-            WinDef.RECT trayRect = new WinDef.RECT();
-            boolean hasTray = false;
-            
-            if (trayHwnd != null) {
-                if (user32.GetWindowRect(trayHwnd, trayRect)) {
-                    hasTray = true;
-                }
-            }
-
-            // 6. 计算 DPI 缩放比例 (JavaFX 没有公开的 OutputScale API，使用 DPI 推断缩放倍数)
-            double scaleX = getScaleFromDpi();
-            double scaleY = scaleX;
-
-            // 转换物理像素到逻辑像素
-            double tbLeft = taskbarRect.left / scaleX;
-            double tbTop = taskbarRect.top / scaleY;
-            double tbRight = taskbarRect.right / scaleX;
-            double tbBottom = taskbarRect.bottom / scaleY;
-            
-            // trayLeft 是托盘区域的最左侧 (即小三角按钮的左边)
-            double trayLeft = hasTray ? trayRect.left / scaleX : tbRight;
-            
-            // 判断任务栏是在底部、顶部、左侧还是右侧
-            boolean isHorizontal = (tbRight - tbLeft) > (tbBottom - tbTop);
-            
-            double x, y;
-            
-            if (isHorizontal) {
-                // 任务栏在底部或顶部
-                // 目标位置：托盘区域的左侧 - 窗口宽度
-                // 减去 2px 是为了留一点缝隙，不紧贴小三角
-                x = trayLeft - windowWidth - 2; 
-                
-                if (tbTop > 0) { 
-                    // 任务栏在底部
-                    double tbHeight = tbBottom - tbTop;
-                    y = tbTop + (tbHeight - windowHeight) / 2;
-                } else {
-                    // 任务栏在顶部
-                    y = tbBottom - windowHeight - (tbBottom - tbTop - windowHeight) / 2;
-                }
-            } else {
-                // 垂直任务栏 (左侧或右侧) - 这种情况较少见，简单处理放在底部
-                x = tbLeft + 5;
-                y = tbBottom - windowHeight - 5;
-            }
-
-            return new Point(x, y);
-        } catch (Exception e) {
-            // JNA 调用可能会因为各种原因失败 (如权限、系统环境等)
-            // 捕获所有异常，确保不会因为定位失败而导致程序崩溃，降级为默认位置
-            System.err.println("JNA Taskbar detection failed: " + e.getMessage());
-            return getDefaultLocation(windowWidth, windowHeight);
+    public static void setWindowTopMost(String windowTitle) {
+        User32 user32 = User32.INSTANCE;
+        WinDef.HWND hwnd = user32.FindWindow(null, windowTitle);
+        if (hwnd != null) {
+            // SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE = 0x0001 | 0x0002 | 0x0010 = 0x0013
+            // HWND_TOPMOST = -1
+            user32.SetWindowPos(hwnd, new WinDef.HWND(new com.sun.jna.Pointer(-1)), 0, 0, 0, 0, 0x0013);
         }
     }
 
-    private static Point getDefaultLocation(double w, double h) {
-        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        return new Point(bounds.getMaxX() - w - 10, bounds.getMaxY() - h - 10);
+    /**
+     * 将窗口嵌入到任务栏 (通过 SetParent) - 暂时禁用，会导致坐标系统混乱
+     */
+    public static void embedIntoTaskbar(String windowTitle) {
+        // 物理嵌入会导致 JavaFX 坐标系与 Windows 父窗口坐标系冲突，
+        // 进而导致窗口飞出屏幕或不可见，引发“报错”假象。
+        // 目前回退此功能，采用强力置顶策略。
+        System.out.println("Embed: Physical embedding disabled due to stability issues.");
     }
 
-    // 基于屏幕 DPI 估算缩放倍数（Windows 标准 DPI 为 96）
-    private static double getScaleFromDpi() {
+    public static Point getDockLocation(double windowWidth, double windowHeight) {
+        System.out.println("TaskbarLocator: Calculating dock location for window size: " + windowWidth + "x" + windowHeight);
+        try {
+            Point jnaPoint = getJnaDockLocation(windowWidth, windowHeight);
+            if (jnaPoint != null) {
+                System.out.println("TaskbarLocator: JNA location found: " + jnaPoint.x + ", " + jnaPoint.y);
+                return jnaPoint;
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        System.out.println("TaskbarLocator: Fallback to JavaFX Screen API");
+        return getJavaFXDockLocation(windowWidth, windowHeight);
+    }
+
+    private static Point getJnaDockLocation(double windowWidth, double windowHeight) {
+        User32 user32 = User32.INSTANCE;
+        WinDef.HWND taskbarHwnd = user32.FindWindow("Shell_TrayWnd", null);
+        if (taskbarHwnd == null) {
+            System.out.println("TaskbarLocator: Shell_TrayWnd not found");
+            return null;
+        }
+
+        WinDef.RECT taskbarRect = new WinDef.RECT();
+        if (!user32.GetWindowRect(taskbarHwnd, taskbarRect)) {
+            System.out.println("TaskbarLocator: Failed to get Shell_TrayWnd rect");
+            return null;
+        }
+
+        WinDef.HWND trayHwnd = user32.FindWindowEx(taskbarHwnd, null, "TrayNotifyWnd", null);
+        WinDef.RECT trayRect = new WinDef.RECT();
+        boolean hasTray = false;
+        if (trayHwnd != null && user32.GetWindowRect(trayHwnd, trayRect)) {
+            hasTray = true;
+        } else {
+            System.out.println("TaskbarLocator: TrayNotifyWnd not found or rect invalid");
+        }
+
+        double scaleX = getScaleFromDpi();
+        double scaleY = scaleX;
+
+        double tbLeft = taskbarRect.left / scaleX;
+        double tbTop = taskbarRect.top / scaleY;
+        double tbRight = taskbarRect.right / scaleX;
+        double tbBottom = taskbarRect.bottom / scaleY;
+        
+        double trayLeft = hasTray ? trayRect.left / scaleX : tbRight;
+        boolean isHorizontal = (tbRight - tbLeft) > (tbBottom - tbTop);
+        System.out.printf("TaskbarLocator: Taskbar Rect (Scaled): [%f, %f, %f, %f]%n", tbLeft, tbTop, tbRight, tbBottom);
+        System.out.printf("TaskbarLocator: Tray Left (Scaled): %f%n", trayLeft);
+        
+        double x, y;
+        if (isHorizontal) {
+            // 水平任务栏 (底部/顶部)
+            // 目标位置：托盘区左侧
+            x = trayLeft - windowWidth - 2; 
+            
+            if (tbTop > 0) { // 底部任务栏
+                double tbHeight = tbBottom - tbTop;
+                // 垂直居中
+                y = tbTop + (tbHeight - windowHeight) / 2;
+                
+                // 再次修正：如果垂直居中导致底部超出屏幕 (tbBottom)，则向上推
+                if (y + windowHeight > tbBottom) {
+                    y = tbBottom - windowHeight;
+                }
+            } else { // 顶部任务栏
+                double tbHeight = tbBottom - tbTop;
+                y = tbTop + (tbHeight - windowHeight) / 2;
+            }
+        } else {
+            // 垂直任务栏 (左/右)
+            x = tbLeft + 5;
+            y = tbBottom - windowHeight - 5;
+        }
+        System.out.println("TaskbarLocator: Computed JNA Location: " + x + ", " + y);
+        return new Point(x, y);
+    }
+
+    private static Point getJavaFXDockLocation(double w, double h) {
+        Rectangle2D screen = Screen.getPrimary().getBounds();
+        Rectangle2D visual = Screen.getPrimary().getVisualBounds();
+        
+        // 推断任务栏位置
+        double x, y;
+        
+        // 底部任务栏: visual.maxY < screen.maxY
+        if (visual.getMaxY() < screen.getMaxY()) {
+            double tbHeight = screen.getMaxY() - visual.getMaxY();
+            double tbTop = visual.getMaxY();
+            // 垂直居中
+            x = visual.getMaxX() - w - 2; 
+            y = tbTop + (tbHeight - h) / 2;
+        } 
+        // 顶部任务栏: visual.minY > screen.minY
+        else if (visual.getMinY() > screen.getMinY()) {
+            double tbHeight = visual.getMinY() - screen.getMinY();
+            x = visual.getMaxX() - w - 2;
+            y = (tbHeight - h) / 2;
+        }
+        // 右侧任务栏: visual.maxX < screen.maxX
+        else if (visual.getMaxX() < screen.getMaxX()) {
+            x = visual.getMaxX() + 5;
+            y = visual.getMaxY() - h - 5;
+        }
+        // 左侧任务栏: visual.minX > screen.minX
+        else if (visual.getMinX() > screen.getMinX()) {
+            x = visual.getMinX() + 5;
+            y = visual.getMaxY() - h - 5;
+        }
+        // 无法判断 (比如全屏模式)，放在右下角
+        else {
+            x = screen.getMaxX() - w - 10;
+            y = screen.getMaxY() - h - 10;
+        }
+        
+        return new Point(x, y);
+    }
+
+    public static Rectangle2D getTaskbarBounds() {
+        try {
+            // 优先使用 JNA
+            User32 user32 = User32.INSTANCE;
+            WinDef.HWND taskbarHwnd = user32.FindWindow("Shell_TrayWnd", null);
+            if (taskbarHwnd != null) {
+                WinDef.RECT taskbarRect = new WinDef.RECT();
+                if (user32.GetWindowRect(taskbarHwnd, taskbarRect)) {
+                    double scale = getScaleFromDpi();
+                    return new Rectangle2D(
+                        taskbarRect.left / scale,
+                        taskbarRect.top / scale,
+                        (taskbarRect.right - taskbarRect.left) / scale,
+                        (taskbarRect.bottom - taskbarRect.top) / scale
+                    );
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        // 降级使用 JavaFX VisualBounds
+        Rectangle2D screen = Screen.getPrimary().getBounds();
+        Rectangle2D visual = Screen.getPrimary().getVisualBounds();
+        
+        if (visual.getMaxY() < screen.getMaxY()) { // Bottom
+            return new Rectangle2D(0, visual.getMaxY(), screen.getWidth(), screen.getMaxY() - visual.getMaxY());
+        } else if (visual.getMinY() > screen.getMinY()) { // Top
+            return new Rectangle2D(0, 0, screen.getWidth(), visual.getMinY());
+        }
+        // 其他情况简化处理
+        return new Rectangle2D(0, visual.getMaxY(), screen.getWidth(), 40); 
+    }
+
+    public static double getScaleFromDpi() {
         try {
             double dpi = Screen.getPrimary().getDpi();
+            double outputScaleX = Screen.getPrimary().getOutputScaleX();
+            System.out.println("TaskbarLocator: Screen DPI=" + dpi + ", OutputScaleX=" + outputScaleX);
+            
+            // 如果 outputScaleX 是 1.0，但 DPI 明显很大 (> 120, 约 125%)，说明 JavaFX 可能没正确识别缩放
+            // 此时应该信任 DPI 计算出的缩放比
+            if (outputScaleX == 1.0 && dpi > 120) {
+                double scale = Math.round(dpi / 96.0 * 4.0) / 4.0;
+                System.out.println("TaskbarLocator: Using DPI-calculated scale: " + scale);
+                return (scale > 0 && scale <= 4.0) ? scale : 1.0;
+            }
+            
+            // 否则优先使用 outputScaleX
+            if (outputScaleX > 0) return outputScaleX;
+            
+            // Fallback
             if (dpi > 0) {
-                double scale = dpi / 96.0;
-                // 防御性处理，避免异常值
-                if (scale < 0.5) return 1.0;
-                if (scale > 4.0) return 1.0;
-                return scale;
+                double scale = Math.round(dpi / 96.0 * 4.0) / 4.0;
+                return (scale > 0 && scale <= 4.0) ? scale : 1.0;
             }
         } catch (Exception ignored) {}
         return 1.0;
